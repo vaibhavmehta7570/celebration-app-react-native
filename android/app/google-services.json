@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "707842310446",
+    "project_id": "celebrationapp-de47c",
+    "storage_bucket": "celebrationapp-de47c.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:707842310446:android:b53c73f8061853218dfabf",
+        "android_client_info": {
+          "package_name": "com.celebrationapp_final"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "707842310446-npel45mq5gtrhjmaraekv838sbb9detl.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.celebrationapp_final",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "707842310446-pujqspgm16rb2d9ako0u1ka9u70q3ssi.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAP3bPSlF4t8jeVilX96q6DYmBdR-EuS4w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "707842310446-pujqspgm16rb2d9ako0u1ka9u70q3ssi.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
