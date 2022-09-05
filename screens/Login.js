@@ -1,22 +1,15 @@
 import React, {useState, useEffect} from 'react';
-import {
-  View,
-  StyleSheet,
-  Pressable,
-  Text,
-  TextInput,
-  Button,
-} from 'react-native';
+import {View, StyleSheet, Pressable, Text, TextInput} from 'react-native';
 import auth from '@react-native-firebase/auth';
-// import {useNavigation} from '@react-navigation/native';
+import {createNewUser} from '../controller/newUserController';
+import {useAppContext} from '../App.provider';
 
 const Login: () => Node = ({navigation}) => {
+  const appContext = useAppContext();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [signupSucessfull, setSignUpsucessfull] = useState(false);
-  const [adminView, setAdminView] = useState(false);
   const [showInvalidUserError, setShowInvalidUserError] = useState(false);
-  //   const navigation = useNavigation;
 
   const disapperTostMessage = () => {
     setTimeout(() => {
@@ -32,6 +25,17 @@ const Login: () => Node = ({navigation}) => {
     return unsubscribe;
   }, []);
 
+  const addNewUser = data => {
+    const {uid, email} = data?.user;
+    console.log(uid, email);
+    let newUser = {
+      uid,
+      email,
+      isAdmin: false,
+    };
+    createNewUser(newUser);
+  };
+
   const handelSignUp = () => {
     auth()
       .createUserWithEmailAndPassword(email, password)
@@ -41,6 +45,7 @@ const Login: () => Node = ({navigation}) => {
         setPassword('');
         setSignUpsucessfull('true');
         disapperTostMessage();
+        addNewUser(data);
       })
       .catch(error => {
         if (error.code === 'auth/email-already-in-use') {
@@ -55,16 +60,19 @@ const Login: () => Node = ({navigation}) => {
       });
   };
 
-  const AuthenticateUser = () => {
+  const AuthenticateUser = async () => {
     auth()
       .signInWithEmailAndPassword(email, password)
-      .then(userCredentials => {
+      .then(async userCredentials => {
         const user = userCredentials.user;
         console.log(user, 'signedin sucessfully');
-        navigation.navigate('AdminHome');
+        appContext.handleUserIdChange(user?.uid);
+        navigation.navigate('AdminHome', {
+          user,
+        });
       })
       .catch(err => {
-        console.log(err);
+        console.log('something went wrong', err);
         setShowInvalidUserError(true);
         setEmail('');
         setPassword('');
@@ -102,15 +110,20 @@ const Login: () => Node = ({navigation}) => {
         </View>
       )}
       <Pressable onPress={() => AuthenticateUser()} style={styles.btnBox}>
-        <Text>Login In</Text>
+        <Text style={styles.btnText}>Login In</Text>
       </Pressable>
-      <Pressable onPress={handelSignUp} style={styles.btnBox}>
-        <Text>SignUp</Text>
+      <Pressable onPress={() => handelSignUp()} style={styles.btnBox}>
+        <Text style={styles.btnText}>SignUp</Text>
       </Pressable>
     </View>
   );
 };
 const styles = StyleSheet.create({
+  btnText: {
+    width: '100%',
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
   container: {
     flex: 1,
     justifyContent: 'center',

@@ -1,75 +1,132 @@
-import React, {useState} from 'react';
-import {Pressable, StyleSheet, Text, TextInput, View} from 'react-native';
+import React, {useState, useEffect} from 'react';
+import {
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import SelectBox from 'react-native-multi-selectbox';
+import {xorBy} from 'lodash';
+import firestore from '@react-native-firebase/firestore';
+
 import DatePicker from 'react-native-date-picker';
+import {createNewEvent} from '../controller/eventController';
+const db = firestore();
 
 const CreateEditEvent = ({route, navigation}) => {
+  const [GroupNames, setGroupNames] = useState([]);
+  useEffect(() => {
+    let temp = [];
+    db.collection('Groups')
+      .get()
+      .then(snapshot => {
+        snapshot.forEach(item => {
+          temp.push(item.data());
+        });
+      })
+      .then(() => {
+        temp = temp.map(item => {
+          return {item: item?.groupName, id: item?.id};
+        });
+        setGroupNames(temp);
+      });
+  }, []);
   const {data} = route.params || {};
-  const [description, setDescription] = useState(data?.item.description || '');
-  const [upi, setUpi] = useState(data?.item.upiId || '');
-  const [title, setTitle] = useState(data?.item.eventName || '');
-  const [date, setDate] = useState(new Date());
+  console.log('===', data);
+  const [description, setDescription] = useState(data?.description || '');
+  const [upi, setUpi] = useState(data?.upiId || '');
+  const [title, setTitle] = useState(data?.eventName || '');
+  const [date, setDate] = useState(data.date.toDate() || new Date());
   const [openDatePicker, setOpenDatePicker] = useState(false);
+  const [selectedGroup, setselectedGroup] = useState([]);
+
+  function onMultiChange() {
+    return item => setselectedGroup(xorBy(selectedGroup, [item], 'id'));
+  }
   const createEvent = () => {
     let newEvent = {
       eventName: title,
       description: description,
       eventOpen: true,
-      upiId: '1234567890@upi',
+      upiId: upi,
       date: date,
+      selectedGroup,
     };
+    createNewEvent(newEvent, addComplete);
   };
+  const addComplete = () => {
+    navigation.navigate('AdminHome');
+  };
+
   return (
-    <View style={styles.container}>
+    <ScrollView>
       <View style={styles.heading}>
         <Pressable
           style={styles.backButton}
           onPress={() => navigation.goBack()}>
           <View>
-            <Text> Back </Text>
+            <Text style={{fontWeight: 'bold'}}> Back </Text>
           </View>
         </Pressable>
         <Text style={styles.headingText}>
-          {data?.item.eventID ? 'Edit Event' : 'Create Event'}
+          {data?.id ? 'Edit Event' : 'Create Event'}
         </Text>
       </View>
       <View>
         <View>
-          <View>
-            <Text style={styles.subTittles}>Event Title</Text>
-          </View>
-          <TextInput
-            style={[styles.descriptionInput, styles.upiInput]}
-            multiline={true}
-            numberOfLines={1}
-            onChangeText={text => {
-              setTitle(text);
-            }}
-            placeholder="Type Event Title"
-            placeholderTextColor="grey"
-            value={title}
-          />
+          <Text style={styles.subTittles}>Select Group/s</Text>
         </View>
+        <SafeAreaView style={{flex: 1, margin: 10}}>
+          <SelectBox
+            label="Select Email ID's"
+            options={GroupNames}
+            selectedValues={selectedGroup}
+            onMultiSelect={onMultiChange()}
+            onTapClose={onMultiChange()}
+            isMulti
+          />
+        </SafeAreaView>
+      </View>
+      <View>
         <View>
-          <Text style={styles.subTittles}>Description</Text>
+          <Text style={styles.subTittles}>Event Title</Text>
         </View>
         <TextInput
-          style={styles.descriptionInput}
+          style={[styles.descriptionInput, styles.upiInput, styles.input]}
           multiline={true}
-          numberOfLines={4}
+          numberOfLines={1}
           onChangeText={text => {
-            setDescription(text);
+            setTitle(text);
           }}
-          placeholder="Type Description of the event"
+          placeholder="Type Event Title"
           placeholderTextColor="grey"
-          value={description}
+          value={title}
         />
       </View>
+      <View>
+        <Text style={styles.subTittles}>Description</Text>
+      </View>
+      <TextInput
+        style={[styles.descriptionInput, styles.input]}
+        multiline={true}
+        numberOfLines={4}
+        onChangeText={text => {
+          setDescription(text);
+        }}
+        placeholder="Type Description of the event"
+        placeholderTextColor="grey"
+        value={description}
+      />
       <View>
         <View>
           <Text style={styles.subTittles}>UPI ID</Text>
         </View>
         <TextInput
-          style={[styles.descriptionInput, styles.upiInput]}
+          style={[styles.descriptionInput, styles.upiInput, styles.input]}
           multiline={true}
           numberOfLines={1}
           onChangeText={text => {
@@ -80,7 +137,6 @@ const CreateEditEvent = ({route, navigation}) => {
           value={upi}
         />
       </View>
-
       <View>
         <View>
           <Text style={styles.subTittles}>Last Date to submit Event</Text>
@@ -110,24 +166,22 @@ const CreateEditEvent = ({route, navigation}) => {
           style={styles.dateBtn}
         />
       </View>
-      <Pressable
+
+      <TouchableOpacity
         style={styles.EventBtn}
         onPress={() => {
-          data?.item.eventID ? createEvent() : () => {};
+          data?.id ? editEvent() : createEvent();
         }}>
         <View>
           <Text style={styles.BtnText}>
-            {data?.item.eventID ? 'Edit Event' : 'Create Event'}
+            {data?.id ? 'Edit Event' : 'Create Event'}
           </Text>
         </View>
-      </Pressable>
-    </View>
+      </TouchableOpacity>
+    </ScrollView>
   );
 };
 const styles = StyleSheet.create({
-  container: {
-    height: '100%',
-  },
   heading: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -146,15 +200,16 @@ const styles = StyleSheet.create({
     fontSize: 25,
     borderRadius: 5,
   },
+  dropdown: {
+    margin: 10,
+  },
   headingText: {
     fontWeight: 'bold',
     fontSize: 15,
   },
   descriptionInput: {
-    borderWidth: 1,
-    borderRadius: 5,
     margin: 10,
-    height: 150,
+    height: 50,
   },
   upiInput: {
     height: 50,
@@ -163,14 +218,20 @@ const styles = StyleSheet.create({
     margin: 10,
     fontWeight: 'bold',
   },
+  input: {
+    borderBottomColor: '#dcdde1',
+    borderBottomWidth: 1,
+    borderRadius: 5,
+    marginVertical: 20,
+  },
   EventBtn: {
-    padding: 20,
+    padding: 10,
+    height: 50,
     backgroundColor: '#00a8ff',
     width: '100%',
     textAlign: 'center',
     alignItems: 'center',
-    position: 'absolute',
-    bottom: 0,
+    marginTop: 10,
   },
   BtnText: {
     color: 'white',
